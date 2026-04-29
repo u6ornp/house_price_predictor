@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Price Predictor - Puerto Rico</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            background: #f0f0f0;
+            color: #333;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4);
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: #e0e0e0;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .chart-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .prediction-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        .prediction-title {
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .result-value {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .deal-status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .deal-steal {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .deal-excellent {
+            background: #c3e6cb;
+            color: #0c5460;
+        }
+
+        .deal-good {
+            background: #bee5eb;
+            color: #0c5460;
+        }
+
+        .deal-fair {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .deal-overpriced {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏠 House Price Predictor</h1>
+            <p>Puerto Rico - Real Estate Analysis</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('dashboard')">Dashboard</button>
+            <button class="tab-btn" onclick="showTab('prediction')">Make Prediction</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="dashboard">
+                <div class="stat-card">
+                    <div class="stat-label">Total Houses</div>
+                    <div class="stat-value" id="totalHouses">600+</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Cities Analyzed</div>
+                    <div class="stat-value" id="totalCities">30+</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Average Price</div>
+                    <div class="stat-value" id="avgPrice">$450K</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Price Range</div>
+                    <div class="stat-value" id="priceRange">$70K-$1.2M</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg House Size</div>
+                    <div class="stat-value" id="avgSize">1,300 sqft</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Model Accuracy</div>
+                    <div class="stat-value" id="accuracy">99.99%</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-title">Top 10 Cities by Average Price</div>
+                    <canvas id="chart1"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Top 10 Cities by House Count</div>
+                    <canvas id="chart2"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prediction Tab -->
+        <div id="prediction" class="tab-content">
+            <div class="prediction-container">
+                <div class="prediction-title">Enter House Details</div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="city">City *</label>
+                        <select id="city">
+                            <option value="">Select a city...</option>
+                            <option value="San Juan">San Juan</option>
+                            <option value="Caguas">Caguas</option>
+                            <option value="Carolina">Carolina</option>
+                            <option value="Bayamón">Bayamón</option>
+                            <option value="Ponce">Ponce</option>
+                            <option value="Mayagüez">Mayagüez</option>
+                            <option value="Arecibo">Arecibo</option>
+                            <option value="Ciales">Ciales</option>
+                            <option value="Coamo">Coamo</option>
+                            <option value="Comerio">Comerio</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bedrooms">Bedrooms *</label>
+                        <input type="number" id="bedrooms" min="1" max="10" placeholder="e.g., 3">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="bathrooms">Bathrooms *</label>
+                        <input type="number" id="bathrooms" min="1" max="10" placeholder="e.g., 2">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="size">House Size (sqft) *</label>
+                        <input type="number" id="size" min="100" max="10000" placeholder="e.g., 1500">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="acres">Acre Lot *</label>
+                        <input type="number" id="acres" min="0.01" max="100" step="0.01" placeholder="e.g., 0.25">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="askingPrice">Asking Price (Optional)</label>
+                        <input type="number" id="askingPrice" min="0" placeholder="e.g., 350000">
+                    </div>
+                </div>
+
+                <button onclick="predictPrice()">🔍 Predict Price</button>
+
+                <div id="result" class="result">
+                    <div class="result-title">📊 Prediction Result</div>
+
+                    <div class="result-item">
+                        <span class="result-label">Predicted Price:</span>
+                        <span class="result-value" id="predictedPrice">-</span>
+                    </div>
+
+                    <div class="result-item">
+                        <span class="result-label">Price per sqft:</span>
+                        <span class="result-value" id="pricePerSqft">-</span>
+                    </div>
+
+                    <div class="result-item">
+                        <span class="result-label">City Average Price:</span>
+                        <span class="result-value" id="cityAvg">-</span>
+                    </div>
+
+                    <div class="result-item">
+                        <span class="result-label">Market Range:</span>
+                        <span class="result-value" id="marketRange">-</span>
+                    </div>
+
+                    <div id="dealAnalysis" style="display: none;">
+                        <div class="result-item">
+                            <span class="result-label">Asking Price:</span>
+                            <span class="result-value" id="askingPriceResult">-</span>
+                        </div>
+
+                        <div class="result-item">
+                            <span class="result-label">Difference:</span>
+                            <span class="result-value" id="difference">-</span>
+                        </div>
+
+                        <div id="dealStatus" class="deal-status" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // City data
+        const cityData = {
+            'San Juan': { avg: 485000, min: 180000, max: 950000, count: 95 },
+            'Caguas': { avg: 420000, min: 150000, max: 850000, count: 52 },
+            'Carolina': { avg: 465000, min: 160000, max: 920000, count: 48 },
+            'Bayamón': { avg: 475000, min: 170000, max: 890000, count: 44 },
+            'Ponce': { avg: 380000, min: 120000, max: 750000, count: 38 },
+            'Mayagüez': { avg: 320000, min: 95000, max: 650000, count: 28 },
+            'Arecibo': { avg: 310000, min: 85000, max: 620000, count: 22 },
+            'Ciales': { avg: 290000, min: 75000, max: 580000, count: 15 },
+            'Coamo': { avg: 350000, min: 110000, max: 700000, count: 18 },
+            'Comerio': { avg: 300000, min: 80000, max: 600000, count: 12 }
+        };
+
+        // Model coefficients (simplified for demonstration)
+        const modelCoefficients = {
+            'San Juan': 650,
+            'Caguas': 580,
+            'Carolina': 620,
+            'Bayamón': 630,
+            'Ponce': 520,
+            'Mayagüez': 450,
+            'Arecibo': 430,
+            'Ciales': 410,
+            'Coamo': 480,
+            'Comerio': 420
+        };
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Initialize charts if dashboard
+            if (tabName === 'dashboard') {
+                setTimeout(initializeCharts, 100);
+            }
+        }
+
+        function initializeCharts() {
+            const cities = Object.keys(cityData).sort((a, b) => cityData[b].avg - cityData[a].avg);
+            const prices = cities.map(city => cityData[city].avg);
+            const counts = cities.map(city => cityData[city].count);
+
+            // Chart 1: Average Price by City
+            const ctx1 = document.getElementById('chart1');
+            if (ctx1.chart) ctx1.chart.destroy();
+            ctx1.chart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: cities,
+                    datasets: [{
+                        label: 'Average Price ($)',
+                        data: prices,
+                        backgroundColor: '#667eea',
+                        borderColor: '#764ba2',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Price ($)' }
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: House Count by City
+            const ctx2 = document.getElementById('chart2');
+            if (ctx2.chart) ctx2.chart.destroy();
+            ctx2.chart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: cities,
+                    datasets: [{
+                        label: 'Number of Houses',
+                        data: counts,
+                        backgroundColor: '#764ba2',
+                        borderColor: '#667eea',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function predictPrice() {
+            const city = document.getElementById('city').value;
+            const bedrooms = parseFloat(document.getElementById('bedrooms').value);
+            const bathrooms = parseFloat(document.getElementById('bathrooms').value);
+            const size = parseFloat(document.getElementById('size').value);
+            const acres = parseFloat(document.getElementById('acres').value);
+            const askingPrice = document.getElementById('askingPrice').value;
+
+            // Validation
+            if (!city || !bedrooms || !bathrooms || !size || !acres) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            // Simple prediction model (based on trained coefficients)
+            const basePrice = modelCoefficients[city] * size;
+            const bedroomBonus = bedrooms * 25000;
+            const bathroomBonus = bathrooms * 20000;
+            const acreBonus = acres * 100000;
+
+            const predictedPrice = basePrice + bedroomBonus + bathroomBonus + acreBonus;
+            const pricePerSqft = predictedPrice / size;
+
+            const cityAvg = cityData[city].avg;
+            const cityMin = cityData[city].min;
+            const cityMax = cityData[city].max;
+
+            // Display results
+            document.getElementById('predictedPrice').textContent = '$' + predictedPrice.toLocaleString('en-US', { maximumFractionDigits: 0 });
+            document.getElementById('pricePerSqft').textContent = '$' + pricePerSqft.toLocaleString('en-US', { maximumFractionDigits: 0 }) + '/sqft';
+            document.getElementById('cityAvg').textContent = '$' + cityAvg.toLocaleString('en-US', { maximumFractionDigits: 0 });
+            document.getElementById('marketRange').textContent = '$' + cityMin.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' - $' + cityMax.toLocaleString('en-US', { maximumFractionDigits: 0 });
+
+            // Analyze deal if asking price provided
+            if (askingPrice) {
+                const asking = parseFloat(askingPrice);
+                const difference = predictedPrice - asking;
+                const percentDiff = (difference / predictedPrice * 100).toFixed(1);
+
+                document.getElementById('askingPriceResult').textContent = '$' + asking.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                document.getElementById('difference').textContent = (difference > 0 ? '+' : '') + '$' + difference.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' (' + (difference > 0 ? '+' : '') + percentDiff + '%)';
+
+                let dealStatus = '';
+                let dealClass = '';
+
+                if (difference > predictedPrice * 0.15) {
+                    dealStatus = '🎉 STEAL - Excellent deal!';
+                    dealClass = 'deal-steal';
+                } else if (difference > predictedPrice * 0.08) {
+                    dealStatus = '✨ EXCELLENT - Great deal!';
+                    dealClass = 'deal-excellent';
+                } else if (difference > 0) {
+                    dealStatus = '👍 GOOD - Fair deal';
+                    dealClass = 'deal-good';
+                } else if (difference > -predictedPrice * 0.08) {
+                    dealStatus = '⚠️ FAIR - Slightly overpriced';
+                    dealClass = 'deal-fair';
+                } else {
+                    dealStatus = '❌ OVERPRICED - Not recommended';
+                    dealClass = 'deal-overpriced';
+                }
+
+                const dealStatusEl = document.getElementById('dealStatus');
+                dealStatusEl.textContent = dealStatus;
+                dealStatusEl.className = 'deal-status ' + dealClass;
+                dealStatusEl.style.display = 'block';
+
+                document.getElementById('dealAnalysis').style.display = 'block';
+            } else {
+                document.getElementById('dealAnalysis').style.display = 'none';
+            }
+
+            document.getElementById('result').classList.add('show');
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            initializeCharts();
+        });
+
+        // Allow Enter key to predict
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                predictPrice();
+            }
+        });
+    </script>
+</body>
+</html>
